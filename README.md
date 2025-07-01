@@ -1,4 +1,4 @@
-# LRU Cache Manager
+# SnappyCache
 
 An attempt at implementing a **High-Performance, Thread-Safe LRU (Least Recently Used) Cache** in Java.
 
