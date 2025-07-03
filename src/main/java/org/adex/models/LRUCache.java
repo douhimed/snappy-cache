@@ -28,8 +28,13 @@ public class LRUCache<T> {
     }
 
     public void put(T value) {
-        int key = System.identityHashCode(value);
+        int key = value.hashCode();
         Node<T> node;
+
+        if (this.map.size() == this.capacity) {
+            eviction();
+        }
+
         if (this.map.containsKey(key)) {
             node = map.get(key);
         } else {
@@ -40,7 +45,7 @@ public class LRUCache<T> {
     }
 
     public T get(T obj) {
-        int key = System.identityHashCode(obj);
+        int key = obj.hashCode();
         Node<T> node = this.map.get(key);
 
         if (Objects.isNull(node)) {
@@ -51,6 +56,13 @@ public class LRUCache<T> {
         return node.value();
     }
 
+    public T peek() {
+        return this.head.next().value();
+    }
+
+    public int size() {
+        return this.map.size();
+    }
 
     private void LinkAsMostRecentlyUsed(Node<T> node) {
         detachNodeIfOld(node);
@@ -68,7 +80,7 @@ public class LRUCache<T> {
         Node<T> previous = node.previous();
         Node<T> next = node.next();
 
-        if(Objects.nonNull(previous)) {
+        if (Objects.nonNull(previous)) {
             previous.next(next);
         }
 
@@ -77,7 +89,12 @@ public class LRUCache<T> {
         }
     }
 
-    public T peek() {
-        return this.head.next().value();
+    private void eviction() {
+        Node<T> toDelete = tail.previous();
+
+        tail.previous(toDelete.previous());
+        toDelete.previous().next(tail);
+
+        map.remove(toDelete.value().hashCode());
     }
 }

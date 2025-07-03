@@ -12,7 +12,7 @@ public class LRUCacheTests {
 
     @BeforeEach
     void setUp() {
-        this.cache = new LRUCache<>();
+        this.cache = new LRUCache<>(5);
     }
 
     @Test
@@ -66,19 +66,32 @@ public class LRUCacheTests {
         cache.put(dummy200);
         cache.put(dummy300);
 
-        // When
         cache.get(dummy300);
         cache.get(dummy200);
         cache.get(dummy100);
 
-        // Then - verify head is the most recently accessed
+        // When
         Dummy head = cache.peek();
 
+        // Then
         Assertions.assertAll("Verify head is most recently accessed item",
                 () -> assertNotNull(head, "Head should not be null"),
                 () -> assertEquals(dummy100.value, head.value, "Head should be dummy100"),
                 () -> assertSame(dummy100, head, "Head should be the exact dummy100 instance")
         );
+    }
+
+    @Test
+    void givenCacheWithCapacity5_WhenSizeEqualsCapacity_ThenShouldEviction() {
+        // Given - initialize test data
+        for (int i = 0; i < 8; i++) {
+            cache.put(new Dummy( (i + 1 ) * 10));
+        }
+
+        // When
+        int actual = cache.size();
+
+        assertEquals(5, actual);
     }
 
     private static record Dummy(int value) {
