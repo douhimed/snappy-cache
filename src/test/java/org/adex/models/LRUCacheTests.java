@@ -1,0 +1,86 @@
+package org.adex.models;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+public class LRUCacheTests {
+
+    private LRUCache<Dummy> cache;
+
+    @BeforeEach
+    void setUp() {
+        this.cache = new LRUCache<>();
+    }
+
+    @Test
+    void givenEmptyCache_whenCheckingIsEmpty_thenShouldReturnTrue() {
+        // When
+        boolean isEmpty = cache.isEmpty();
+
+        // Then
+        assertTrue(isEmpty, "New cache should report empty");
+    }
+
+    @Test
+    void givenCacheWithOneEntry_whenCheckingIsEmpty_thenShouldReturnFalse() {
+        // Given
+        cache.put(new Dummy(100));
+
+        // When
+        boolean isEmpty = cache.isEmpty();
+
+        // Then
+        assertFalse(isEmpty, "Cache with entries should report non-empty");
+    }
+
+    @Test
+    void givenEmptyCache_whenPuttingThreeEntries_thenAllShouldBeRetrievable() {
+        // Given
+        Dummy dummy100 = new Dummy(100);
+        Dummy dummy200 = new Dummy(200);
+        Dummy dummy300 = new Dummy(300);
+
+        // When
+        cache.put(dummy100);
+        cache.put(dummy200);
+        cache.put(dummy300);
+
+        // Then
+        assertAll("All entries should be properly stored",
+                () -> assertSame(dummy100, cache.get(dummy100)),
+                () -> assertSame(dummy200, cache.get(dummy200)),
+                () -> assertSame(dummy300, cache.get(dummy300)));
+    }
+
+    @Test
+    void givenCache_WhenGetEntry_ThenShouldBeMovedToHead() {
+        // Given - initialize test data
+        Dummy dummy100 = new Dummy(100);
+        Dummy dummy200 = new Dummy(200);
+        Dummy dummy300 = new Dummy(300);
+
+        cache.put(dummy100);
+        cache.put(dummy200);
+        cache.put(dummy300);
+
+        // When
+        cache.get(dummy300);
+        cache.get(dummy200);
+        cache.get(dummy100);
+
+        // Then - verify head is the most recently accessed
+        Dummy head = cache.peek();
+
+        Assertions.assertAll("Verify head is most recently accessed item",
+                () -> assertNotNull(head, "Head should not be null"),
+                () -> assertEquals(dummy100.value, head.value, "Head should be dummy100"),
+                () -> assertSame(dummy100, head, "Head should be the exact dummy100 instance")
+        );
+    }
+
+    private static record Dummy(int value) {
+    }
+}

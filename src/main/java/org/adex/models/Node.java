@@ -3,12 +3,15 @@ package org.adex.models;
 import java.util.Objects;
 
 public class Node<T> {
-    private final T value;
+    private T value;
 
     private Node<T> previous;
     private Node<T> next;
 
     private long expireTime;
+
+    protected Node() {
+    }
 
     public Node(T value) {
         Objects.requireNonNull(value, "Node's value cannot be null");
