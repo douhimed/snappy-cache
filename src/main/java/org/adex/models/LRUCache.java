@@ -78,15 +78,9 @@ public class LRUCache<T> {
     }
 
     public Collection<T> getAll() {
-        final ReentrantLock lock = this.lock;
-        lock.unlock();
-        try {
-            return map.values()
-                    .stream().map(Node::value)
-                    .toList();
-        } finally {
-            lock.unlock();
-        }
+        return map.values()
+                .stream().map(Node::value)
+                .toList();
     }
 
     public T peek() {
