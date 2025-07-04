@@ -38,3 +38,6 @@ build/
 .DS_Store
 
 token*
+
+### jmh json files ###
+results.json
