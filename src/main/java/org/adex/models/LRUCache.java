@@ -67,6 +67,12 @@ public class LRUCache<T> {
         return node.value();
     }
 
+    public Collection<T> getAll() {
+        return map.values()
+                .stream().map(Node::value)
+                .toList();
+    }
+
     public T peek() {
         if (head.next().equals(tail)) {
             return null;
@@ -111,4 +117,5 @@ public class LRUCache<T> {
 
         map.remove(toDelete.value().hashCode());
     }
+
 }

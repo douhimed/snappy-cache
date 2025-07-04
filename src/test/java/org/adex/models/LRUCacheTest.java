@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.awt.*;
+import java.util.Collection;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -99,7 +100,7 @@ public class LRUCacheTest {
     void givenCacheWithCapacity5_WhenSizeEqualsCapacity_ThenShouldEviction() {
         // Given
         for (int i = 0; i < 8; i++) {
-            cache.put(new Dummy( (i + 1 ) * 10));
+            cache.put(new Dummy((i + 1) * 10));
         }
 
         // When
@@ -141,6 +142,19 @@ public class LRUCacheTest {
 
         // Then
         Assertions.assertEquals("Collection cannot be null", actual.getMessage());
+    }
+
+    @Test
+    void givenValidCache_WhenGetAll_ThenReturnsListOfValues() {
+        // Given - initialize test data
+        cache.put(List.of(new Dummy(100), new Dummy(200), new Dummy(300)), false);
+
+        // When
+        Collection<Dummy> actual = cache.getAll();
+
+        // Then
+        assertNotNull(actual);
+        assertEquals(3, actual.size());
     }
 
     private static record Dummy(int value) {
