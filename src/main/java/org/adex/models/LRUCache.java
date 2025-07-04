@@ -8,7 +8,7 @@ import java.util.Objects;
 public class LRUCache<T> {
 
     private final int capacity;
-    private final Map<Integer, Node<T>> map;
+    private Map<Integer, Node<T>> map;
     private Node<T> head = new Node<>();
     private Node<T> tail = new Node<>();
 
@@ -82,6 +82,12 @@ public class LRUCache<T> {
 
     public int size() {
         return this.map.size();
+    }
+
+    public void purge() {
+        map = new HashMap<>(this.capacity);
+        head.next(tail);
+        tail.previous(head);
     }
 
     private void linkAsMostRecentlyUsed(Node<T> node) {

@@ -157,6 +157,20 @@ public class LRUCacheTest {
         assertEquals(3, actual.size());
     }
 
+    @Test
+    void givenValidCache_WhenPurge_ThenResetToInitState() {
+        // Given - initialize test data
+        cache.put(List.of(new Dummy(100), new Dummy(200), new Dummy(300)), false);
+
+        // When
+        cache.purge();
+
+        // Then
+        assertTrue(cache.isEmpty());
+        assertEquals(0, cache.size());
+        assertNull(cache.peek());
+    }
+
     private static record Dummy(int value) {
     }
 }
