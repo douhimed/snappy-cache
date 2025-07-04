@@ -4,6 +4,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.awt.*;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class LRUCacheTest {
@@ -103,6 +106,41 @@ public class LRUCacheTest {
         int actual = cache.size();
 
         assertEquals(5, actual);
+    }
+
+    @Test
+    void givenCollectionOfEntries_WhenPutAll_ThenShouldBeStoredAndLinked() {
+        // Given - initialize test data
+        Dummy dummy100 = new Dummy(100);
+        Dummy dummy200 = new Dummy(200);
+        Dummy dummy300 = new Dummy(300);
+
+        cache.put(List.of(dummy100, dummy200, dummy300), false);
+
+        cache.get(dummy300);
+        cache.get(dummy200);
+        cache.get(dummy100);
+
+        // When
+        Dummy head = cache.peek();
+
+        // Then
+        Assertions.assertAll("Verify head is most recently accessed item",
+                () -> assertNotNull(head, "Head should not be null"),
+                () -> assertEquals(dummy100.value, head.value, "Head should be dummy100"),
+                () -> assertSame(dummy100, head, "Head should be the exact dummy100 instance")
+        );
+    }
+
+    @Test
+    void givenNullCollection_WhenPut_ThenThrowsException() {
+        // Given
+
+        // When
+        Exception actual = Assertions.assertThrows(NullPointerException.class, () -> cache.put(null, false));
+
+        // Then
+        Assertions.assertEquals("Collection cannot be null", actual.getMessage());
     }
 
     private static record Dummy(int value) {

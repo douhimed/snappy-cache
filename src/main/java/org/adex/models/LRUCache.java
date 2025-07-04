@@ -1,5 +1,6 @@
 package org.adex.models;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -47,6 +48,11 @@ public class LRUCache<T> {
         node = new Node<>(value);
         this.map.put(key, node);
         linkAsMostRecentlyUsed(node);
+    }
+
+    public void put(Collection<T> values, boolean dummy) {
+        Objects.requireNonNull(values, "Collection cannot be null");
+        values.forEach(this::put);
     }
 
     public T get(T obj) {
