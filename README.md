@@ -13,7 +13,7 @@ This project provides a custom implementation of an LRU cache system focused on 
 
 ### ✨ Key Features (Planned & In Progress)
 
-- [ ] **O(1) Get and Put Operations**  
+- [x] **O(1) Get and Put Operations**  
   Efficient operations using a combination of **Doubly-Linked List** and **HashMap**.
 
 - [ ] **Thread-Safe Concurrency Control**  
