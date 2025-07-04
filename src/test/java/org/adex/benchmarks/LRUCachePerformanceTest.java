@@ -1,4 +1,4 @@
-package org.adex.models.benchmarks;
+package org.adex.benchmarks;
 
 import org.junit.jupiter.api.Test;
 import org.openjdk.jmh.results.format.ResultFormatType;

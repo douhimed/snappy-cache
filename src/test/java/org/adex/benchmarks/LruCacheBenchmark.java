@@ -1,4 +1,4 @@
-package org.adex.models.benchmarks;
+package org.adex.benchmarks;
 
 
 import org.adex.models.LRUCache;
