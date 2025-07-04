@@ -4,7 +4,7 @@ package org.adex.models;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class NodeTests {
+public class NodeTest {
 
     @Test
     void givenValidValue_WhenInit_ThenSetValue() {

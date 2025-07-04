@@ -28,20 +28,25 @@ public class LRUCache<T> {
     }
 
     public void put(T value) {
+        Objects.requireNonNull(value, "Value cannot be null");
+
         int key = value.hashCode();
-        Node<T> node;
+
+        Node<T> node = map.get(key);
+
+        if (Objects.nonNull(node)) {
+            node.value(value);
+            linkAsMostRecentlyUsed(node);
+            return;
+        }
 
         if (this.map.size() == this.capacity) {
             eviction();
         }
 
-        if (this.map.containsKey(key)) {
-            node = map.get(key);
-        } else {
-            node = new Node<>(value);
-            this.map.put(key, node);
-        }
-        LinkAsMostRecentlyUsed(node);
+        node = new Node<>(value);
+        this.map.put(key, node);
+        linkAsMostRecentlyUsed(node);
     }
 
     public T get(T obj) {
@@ -52,11 +57,14 @@ public class LRUCache<T> {
             return null;
         }
 
-        LinkAsMostRecentlyUsed(node);
+        linkAsMostRecentlyUsed(node);
         return node.value();
     }
 
     public T peek() {
+        if (head.next().equals(tail)) {
+            return null;
+        }
         return this.head.next().value();
     }
 
@@ -64,7 +72,7 @@ public class LRUCache<T> {
         return this.map.size();
     }
 
-    private void LinkAsMostRecentlyUsed(Node<T> node) {
+    private void linkAsMostRecentlyUsed(Node<T> node) {
         detachNodeIfOld(node);
         moveToHead(node);
     }

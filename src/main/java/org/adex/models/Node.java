@@ -22,6 +22,11 @@ public class Node<T> {
         return value;
     }
 
+    public Node<T> value(T value) {
+        this.value = value;
+        return this;
+    }
+
     public Node<T> previous() {
         return previous;
     }

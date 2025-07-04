@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class LRUCacheTests {
+public class LRUCacheTest {
 
     private LRUCache<Dummy> cache;
 
@@ -56,6 +56,17 @@ public class LRUCacheTests {
     }
 
     @Test
+    void givenNullValue_WhenPut_ThenThrowsException() {
+        // Given
+
+        // When
+        Exception actual = Assertions.assertThrows(NullPointerException.class, () -> cache.put(null));
+
+        // Then
+        Assertions.assertEquals("Value cannot be null", actual.getMessage());
+    }
+
+    @Test
     void givenCache_WhenGetEntry_ThenShouldBeMovedToHead() {
         // Given - initialize test data
         Dummy dummy100 = new Dummy(100);
@@ -83,7 +94,7 @@ public class LRUCacheTests {
 
     @Test
     void givenCacheWithCapacity5_WhenSizeEqualsCapacity_ThenShouldEviction() {
-        // Given - initialize test data
+        // Given
         for (int i = 0; i < 8; i++) {
             cache.put(new Dummy( (i + 1 ) * 10));
         }
