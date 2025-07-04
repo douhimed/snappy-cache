@@ -4,6 +4,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class LRUCache<T> {
 
@@ -11,6 +14,8 @@ public class LRUCache<T> {
     private Map<Integer, Node<T>> map;
     private Node<T> head = new Node<>();
     private Node<T> tail = new Node<>();
+
+    protected ReentrantLock lock = new ReentrantLock();
 
     public LRUCache() {
         this(16);
@@ -56,21 +61,34 @@ public class LRUCache<T> {
     }
 
     public T get(T obj) {
-        int key = obj.hashCode();
-        Node<T> node = this.map.get(key);
+        final ReentrantLock lock = this.lock;
+        lock.lock();
 
-        if (Objects.isNull(node)) {
-            return null;
+        try {
+            int key = obj.hashCode();
+            Node<T> node = this.map.get(key);
+
+            if (Objects.isNull(node)) {
+                return null;
+            }
+
+            linkAsMostRecentlyUsed(node);
+            return node.value();
+        } finally {
+            lock.unlock();
         }
-
-        linkAsMostRecentlyUsed(node);
-        return node.value();
     }
 
     public Collection<T> getAll() {
-        return map.values()
-                .stream().map(Node::value)
-                .toList();
+        final ReentrantLock lock = this.lock;
+        lock.unlock();
+        try {
+            return map.values()
+                    .stream().map(Node::value)
+                    .toList();
+        } finally {
+            lock.unlock();
+        }
     }
 
     public T peek() {
