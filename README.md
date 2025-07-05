@@ -16,7 +16,7 @@ This project provides a custom implementation of an LRU cache system focused on 
 - [x] **O(1) Get and Put Operations**  
   Efficient operations using a combination of **Doubly-Linked List** and **HashMap**.
 
-- [ ] **Thread-Safe Concurrency Control**  
+- [x] **Thread-Safe Concurrency Control**  
   Built-in synchronization for safe multi-threaded access.
 
 - [ ] **TTL (Time-To-Live) Support**  
