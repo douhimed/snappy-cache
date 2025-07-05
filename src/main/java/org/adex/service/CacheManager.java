@@ -19,4 +19,6 @@ public interface CacheManager<T> {
     void purge();
 
     boolean isEmpty();
+
+    int capacity();
 }

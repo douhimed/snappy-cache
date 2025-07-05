@@ -10,8 +10,8 @@ public class LRUCache<T> implements CacheManager<T> {
 
     private final int capacity;
     private Map<Integer, Node<T>> map;
-    private Node<T> head = new Node<>();
-    private Node<T> tail = new Node<>();
+    private final Node<T> head = new Node<>();
+    private final Node<T> tail = new Node<>();
 
     protected ReentrantLock lock = new ReentrantLock();
 
@@ -27,8 +27,26 @@ public class LRUCache<T> implements CacheManager<T> {
         tail.previous(head);
     }
 
+    @Override
     public boolean isEmpty() {
-        return this.map.isEmpty();
+        final ReentrantLock lock = this.lock;
+        lock.lock();
+        try {
+            return map.isEmpty();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public int capacity() {
+        final ReentrantLock lock = this.lock;
+        lock.lock();
+        try {
+            return this.capacity;
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
@@ -96,22 +114,41 @@ public class LRUCache<T> implements CacheManager<T> {
 
     @Override
     public T peek() {
-        if (head.next().equals(tail)) {
-            return null;
+        final ReentrantLock lock = this.lock;
+        lock.lock();
+
+        try {
+            if (head.next().equals(tail)) {
+                return null;
+            }
+            return this.head.next().value();
+        } finally {
+            lock.unlock();
         }
-        return this.head.next().value();
     }
 
     @Override
     public int size() {
-        return this.map.size();
+        final ReentrantLock lock = this.lock;
+        lock.lock();
+        try {
+            return map.size();
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
     public void purge() {
-        map = new HashMap<>(this.capacity);
-        head.next(tail);
-        tail.previous(head);
+        final ReentrantLock lock = this.lock;
+        lock.lock();
+        try {
+            map.clear();
+            head.next(tail);
+            tail.previous(head);
+        } finally {
+            lock.unlock();
+        }
     }
 
     private void eviction() {

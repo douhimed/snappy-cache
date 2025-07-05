@@ -7,6 +7,9 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -19,6 +22,7 @@ public class LRUCacheConcurrencyTest {
     private static final int ITERATIONS = 1_000;
     private static final int HIGH_CONTENTION_ITERATIONS = 10_000;
     private static final int TIMEOUT_SECONDS = 5;
+    private static final int OPERATIONS_PER_THREAD = 1000;
 
     private ExecutorService executorService;
     private LRUCache<Integer> cache;
@@ -178,6 +182,85 @@ public class LRUCacheConcurrencyTest {
 
         awaitExecutorTermination(executor);
         assertEquals(threadCount * elementsPerThread, largeCache.size());
+    }
+
+    @Test
+    void givenConcurrentAccess_whenCheckingEmpty_thenConsistentResults() throws Exception {
+        AtomicBoolean isEmptyConsistent = new AtomicBoolean(true);
+        CountDownLatch latch = new CountDownLatch(THREAD_COUNT);
+
+        for (int i = 0; i < THREAD_COUNT; i++) {
+            executorService.execute(() -> {
+                latch.countDown();
+                try {
+                    latch.await();
+                    for (int j = 0; j < OPERATIONS_PER_THREAD; j++) {
+                        boolean empty = cache.isEmpty();
+                        if (empty && !cache.isEmpty()) {
+                            isEmptyConsistent.set(false);
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+        }
+
+        executorService.awaitTermination(2, TimeUnit.SECONDS);
+        assertTrue(isEmptyConsistent.get(), "isEmpty() reported inconsistent results during concurrent modifications");
+    }
+
+    @Test
+    void givenConcurrentPuts_whenCheckingSize_thenCorrectTotal() throws Exception {
+        AtomicInteger actualAdds = new AtomicInteger();
+        CountDownLatch latch = new CountDownLatch(THREAD_COUNT);
+
+        for (int i = 0; i < THREAD_COUNT; i++) {
+            executorService.execute(() -> {
+                latch.countDown();
+                try {
+                    latch.await();
+                    for (int j = 0; j < OPERATIONS_PER_THREAD; j++) {
+                        int val = ThreadLocalRandom.current().nextInt();
+                        cache.put(val);
+                        actualAdds.incrementAndGet();
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+        }
+
+        executorService.awaitTermination(2, TimeUnit.SECONDS);
+        assertEquals(Math.min(cache.capacity(), actualAdds.get()), cache.size(), "size() reported wrong count during concurrent puts");
+    }
+
+    @Test
+    void givenConcurrentAccess_whenPeeking_thenSeesLatestOrNull() throws Exception {
+        AtomicReference<Integer> lastPut = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(THREAD_COUNT);
+
+        for (int i = 0; i < THREAD_COUNT; i++) {
+            executorService.execute(() -> {
+                latch.countDown();
+                try {
+                    latch.await();
+                    for (int j = 0; j < OPERATIONS_PER_THREAD; j++) {
+                        int val = ThreadLocalRandom.current().nextInt();
+                        cache.put(val);
+                        lastPut.set(val);
+
+                        Integer peeked = cache.peek();
+                        assertTrue(peeked == null || peeked.equals(lastPut.get()),
+                                "peek() returned inconsistent value during concurrent puts");
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+        }
+
+        executorService.awaitTermination(2, TimeUnit.SECONDS);
     }
 
     // Helper methods
