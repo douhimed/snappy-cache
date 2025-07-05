@@ -1,9 +1,6 @@
 package org.adex.service;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class LRUCache<T> implements CacheManager<T> {
@@ -82,7 +79,19 @@ public class LRUCache<T> implements CacheManager<T> {
     @Override
     public void put(Collection<T> values, boolean dummy) {
         Objects.requireNonNull(values, "Collection cannot be null");
-        values.forEach(this::put);
+        if (values.isEmpty()) return;
+
+        final ReentrantLock lock = this.lock;
+        lock.lock();
+        try {
+            for (T value : values) {
+                if (value != null)  {
+                    this.put(value);
+                }
+            }
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
@@ -107,9 +116,16 @@ public class LRUCache<T> implements CacheManager<T> {
 
     @Override
     public Collection<T> get() {
-        return map.values()
-                .stream().map(Node::value)
-                .toList();
+        final ReentrantLock lock = this.lock;
+        lock.lock();
+        try {
+            return map.values()
+                    .stream()
+                    .map(Node::value)
+                    .toList();
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override

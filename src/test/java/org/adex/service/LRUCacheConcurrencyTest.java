@@ -2,10 +2,10 @@ package org.adex.service;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -261,6 +261,173 @@ public class LRUCacheConcurrencyTest {
         }
 
         executorService.awaitTermination(2, TimeUnit.SECONDS);
+    }
+
+    @RepeatedTest(5)
+    void givenConcurrentCollections_whenPutAll_thenMaintainsConsistency() throws Exception {
+        final int THREAD_COUNT = 10;
+        final int BATCH_SIZE = 100;
+        final ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+        final CountDownLatch latch = new CountDownLatch(THREAD_COUNT);
+
+        // Test with collection size > capacity to force evictions
+        final int TEST_CAPACITY = 50;
+        final LRUCache<Integer> testCache = new LRUCache<>(TEST_CAPACITY);
+
+        for (int i = 0; i < THREAD_COUNT; i++) {
+            final int threadId = i;
+            executor.execute(() -> {
+                latch.countDown();
+                try {
+                    latch.await();
+                    List<Integer> batch = IntStream.range(0, BATCH_SIZE)
+                            .map(n -> threadId * BATCH_SIZE + n)
+                            .boxed()
+                            .collect(Collectors.toList());
+
+                    testCache.put(batch, false);
+
+                    // Verify capacity constraint
+                    assertTrue(testCache.size() <= TEST_CAPACITY,
+                            "Cache exceeded capacity");
+                } catch (Exception e) {
+                    fail("Unexpected exception: " + e);
+                }
+            });
+        }
+
+        executor.shutdown();
+        assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void givenNullInCollection_whenPutAll_thenFailsAtomically() {
+        cache = new LRUCache<>();
+        List<Integer> mixedValues = Arrays.asList(1, 2, null, 4);
+
+        cache.put(mixedValues, false);
+
+        assertEquals(3, cache.size());
+        assertFalse(cache.isEmpty());
+    }
+
+    @Test
+    void givenEmptyCollection_whenPutAll_thenNoEffect() {
+        cache = new LRUCache<>();
+        cache.put(Collections.singletonList(1), false);
+
+        cache.put(Collections.emptyList(), false);
+
+        assertEquals(1, cache.size(), "Cache size should remain unchanged");
+        assertEquals(1, cache.peek(), "Head item should remain unchanged");
+    }
+
+    @Test
+    void givenDuplicateValues_whenPutAll_thenMaintainsLRUOrder() {
+        cache = new LRUCache<>();
+        List<Integer> values = Arrays.asList(1, 2, 3, 2, 1);
+
+        cache.put(values, false);
+
+        assertEquals(3, cache.size(), "Should deduplicate values");
+        assertEquals(1, cache.peek(), "Last duplicate should be at head");
+
+        Iterator<Integer> it = cache.get().iterator();
+        assertEquals(1, it.next());
+        assertEquals(2, it.next());
+        assertEquals(3, it.next());
+    }
+
+    @RepeatedTest(5)
+    void givenConcurrentAccess_whenGettingAllValues_thenConsistentResults() throws Exception {
+        final int THREAD_COUNT = 10;
+        final int OPERATIONS = 1000;
+        final ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+        final CountDownLatch latch = new CountDownLatch(THREAD_COUNT);
+        final AtomicInteger inconsistencies = new AtomicInteger(0);
+
+        IntStream.range(0, 50).forEach(i -> cache.put(i));
+
+        for (int i = 0; i < THREAD_COUNT; i++) {
+            executor.execute(() -> {
+                latch.countDown();
+                try {
+                    latch.await();
+                    for (int j = 0; j < OPERATIONS; j++) {
+                        Collection<Integer> values = cache.get();
+
+                        cache.lock.lock();
+                        try {
+                            if (values.size() != cache.size()) {
+                                inconsistencies.incrementAndGet();
+                            }
+
+                            for (Integer value : values) {
+                                if (cache.peek() != null && !cache.get(value).equals(value)) {
+                                    inconsistencies.incrementAndGet();
+                                }
+                            }
+                        } finally {
+                            cache.lock.unlock();
+                        }
+                    }
+                } catch (Exception e) {
+                    fail("Unexpected exception: " + e);
+                }
+            });
+        }
+
+        executor.shutdown();
+        assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS));
+        assertEquals(0, inconsistencies.get(),
+                "Found " + inconsistencies.get() + " inconsistent reads");
+    }
+
+    @Test
+    void givenEmptyCache_whenGetAll_thenReturnsEmptyCollection() {
+        cache =  new LRUCache<>();
+        Collection<Integer> result = cache.get();
+        assertTrue(result.isEmpty(), "Should return empty collection");
+    }
+
+    @Test
+    void givenModifiedCache_whenGetAll_thenReturnsIndependentCopy() {
+        cache = new LRUCache<>();
+        cache.put(Arrays.asList(1, 2, 3), false);
+        Collection<Integer> firstGet = cache.get();
+        cache.put(4);
+
+        assertFalse(firstGet.contains(4), "Original collection shouldn't reflect later changes");
+        assertEquals(3, firstGet.size());
+    }
+
+    @Test
+    void givenConcurrentModifications_whenGettingAllValues_thenNoCorruption() throws Exception {
+        final int THREAD_COUNT = 5;
+        final ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+        final AtomicBoolean clean = new AtomicBoolean(true);
+
+        IntStream.range(0, 100).forEach(i -> cache.put(i));
+
+        for (int i = 0; i < THREAD_COUNT; i++) {
+            executor.execute(() -> {
+                try {
+                    for (int j = 0; j < 100; j++) {
+                        Collection<Integer> values = cache.get();
+                        if (values.stream().anyMatch(Objects::isNull)) {
+                            clean.set(false);
+                        }
+                        cache.put(j + 1000); // Concurrent modifications
+                    }
+                } catch (Exception e) {
+                    clean.set(false);
+                }
+            });
+        }
+
+        executor.shutdown();
+        assertTrue(executor.awaitTermination(3, TimeUnit.SECONDS));
+        assertTrue(clean.get(), "Encountered corrupted collection reads");
     }
 
     // Helper methods
