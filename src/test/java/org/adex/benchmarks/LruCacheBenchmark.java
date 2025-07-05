@@ -1,7 +1,7 @@
 package org.adex.benchmarks;
 
 
-import org.adex.models.LRUCache;
+import org.adex.service.LRUCache;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 

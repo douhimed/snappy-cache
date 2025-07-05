@@ -1,4 +1,4 @@
-package org.adex.models;
+package org.adex.service;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class LRUCache<T> {
+public class LRUCache<T> implements CacheManager<T> {
 
     private final int capacity;
     private Map<Integer, Node<T>> map;
@@ -31,6 +31,7 @@ public class LRUCache<T> {
         return this.map.isEmpty();
     }
 
+    @Override
     public void put(T value) {
         Objects.requireNonNull(value, "Value cannot be null");
 
@@ -44,7 +45,7 @@ public class LRUCache<T> {
 
             if (Objects.nonNull(node)) {
                 node.value(value);
-                linkAsMostRecentlyUsed(node);
+                moveToHead(node);
                 return;
             }
 
@@ -54,18 +55,19 @@ public class LRUCache<T> {
 
             node = new Node<>(value);
             this.map.put(key, node);
-            linkAsMostRecentlyUsed(node);
+            addToHead(node);
         } finally {
             lock.unlock();
         }
-
     }
 
+    @Override
     public void put(Collection<T> values, boolean dummy) {
         Objects.requireNonNull(values, "Collection cannot be null");
         values.forEach(this::put);
     }
 
+    @Override
     public T get(T obj) {
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -78,19 +80,21 @@ public class LRUCache<T> {
                 return null;
             }
 
-            linkAsMostRecentlyUsed(node);
+            moveToHead(node);
             return node.value();
         } finally {
             lock.unlock();
         }
     }
 
-    public Collection<T> getAll() {
+    @Override
+    public Collection<T> get() {
         return map.values()
                 .stream().map(Node::value)
                 .toList();
     }
 
+    @Override
     public T peek() {
         if (head.next().equals(tail)) {
             return null;
@@ -98,48 +102,64 @@ public class LRUCache<T> {
         return this.head.next().value();
     }
 
+    @Override
     public int size() {
         return this.map.size();
     }
 
+    @Override
     public void purge() {
         map = new HashMap<>(this.capacity);
         head.next(tail);
         tail.previous(head);
     }
 
-    private void linkAsMostRecentlyUsed(Node<T> node) {
-        detachNodeIfOld(node);
-        moveToHead(node);
-    }
-
-    private void moveToHead(Node<T> node) {
-        node.previous(head);
-        node.next(head.next());
-        head.next().previous(node);
-        head.next(node);
-    }
-
-    private void detachNodeIfOld(Node<T> node) {
-        Node<T> previous = node.previous();
-        Node<T> next = node.next();
-
-        if (Objects.nonNull(previous)) {
-            previous.next(next);
-        }
-
-        if (Objects.nonNull(next)) {
-            next.previous(previous);
-        }
-    }
-
     private void eviction() {
         Node<T> toDelete = tail.previous();
 
-        tail.previous(toDelete.previous());
-        toDelete.previous().next(tail);
+        if (toDelete == null) {
+            return;
+        }
+
+        Node<T> newLast = toDelete.previous();
+        tail.previous(newLast);
+
+        if (newLast != null) {
+            newLast.next(tail);
+        }
 
         map.remove(toDelete.value().hashCode());
+        toDelete.next(null);
+        toDelete.previous(null);
+    }
+
+
+    private void addToHead(Node<T> node) {
+        node.next(head.next());
+        node.previous(head);
+
+        if (head.next() != null) {
+            head.next().previous(node);
+        }
+        head.next(node);
+    }
+
+    private void moveToHead(Node<T> node) {
+        removeNode(node);
+        addToHead(node);
+    }
+
+    private void removeNode(Node<T> node) {
+        Node<T> prev = node.previous();
+        Node<T> next = node.next();
+
+        if (prev != null) {
+            prev.next(next);
+        }
+
+        if (next != null) {
+            next.previous(prev);
+        }
     }
 
 }

@@ -1,4 +1,4 @@
-package org.adex.models;
+package org.adex.service;
 
 import java.util.Objects;
 
@@ -32,7 +32,13 @@ public class Node<T> {
     }
 
     public Node<T> previous(Node<T> previous) {
+        if (this.previous != null) {
+            this.previous.next = null;
+        }
         this.previous = previous;
+        if (previous != null) {
+            previous.next = this;
+        }
         return this;
     }
 
@@ -41,7 +47,13 @@ public class Node<T> {
     }
 
     public Node<T> next(Node<T> next) {
+        if (this.next != null) {
+            this.next.previous = null;
+        }
         this.next = next;
+        if (next != null) {
+            next.previous = this;
+        }
         return this;
     }
 }
