@@ -34,23 +34,31 @@ public class LRUCache<T> {
     public void put(T value) {
         Objects.requireNonNull(value, "Value cannot be null");
 
-        int key = value.hashCode();
+        final ReentrantLock lock = this.lock;
+        lock.lock();
 
-        Node<T> node = map.get(key);
+        try {
+            int key = value.hashCode();
 
-        if (Objects.nonNull(node)) {
-            node.value(value);
+            Node<T> node = map.get(key);
+
+            if (Objects.nonNull(node)) {
+                node.value(value);
+                linkAsMostRecentlyUsed(node);
+                return;
+            }
+
+            if (this.map.size() == this.capacity) {
+                eviction();
+            }
+
+            node = new Node<>(value);
+            this.map.put(key, node);
             linkAsMostRecentlyUsed(node);
-            return;
+        } finally {
+            lock.unlock();
         }
 
-        if (this.map.size() == this.capacity) {
-            eviction();
-        }
-
-        node = new Node<>(value);
-        this.map.put(key, node);
-        linkAsMostRecentlyUsed(node);
     }
 
     public void put(Collection<T> values, boolean dummy) {
