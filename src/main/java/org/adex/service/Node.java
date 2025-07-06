@@ -1,5 +1,8 @@
 package org.adex.service;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Objects;
 
 public class Node<T> {
@@ -8,7 +11,8 @@ public class Node<T> {
     private Node<T> previous;
     private Node<T> next;
 
-    private long expireTime;
+    private long ttl;
+    private long lastAccess;
 
     protected Node() {
     }
@@ -16,6 +20,14 @@ public class Node<T> {
     public Node(T value) {
         Objects.requireNonNull(value, "Node's value cannot be null");
         this.value = value;
+        this.lastAccess = Clock.fixed(Instant.now(), ZoneId.systemDefault()).millis();
+    }
+
+    public Node(T value, long ttl) {
+        Objects.requireNonNull(value, "Node's value cannot be null");
+        this.value = value;
+        this.ttl = ttl;
+        this.lastAccess = Clock.fixed(Instant.now(), ZoneId.systemDefault()).millis();
     }
 
     public T value() {
@@ -55,5 +67,14 @@ public class Node<T> {
             next.previous = this;
         }
         return this;
+    }
+
+    public boolean isExpired() {
+        if (ttl == 0) return false;
+        return System.currentTimeMillis() - lastAccess > ttl;
+    }
+
+    public void updateAccessTime() {
+        lastAccess = System.currentTimeMillis();
     }
 }

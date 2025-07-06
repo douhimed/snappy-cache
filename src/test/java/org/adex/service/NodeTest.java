@@ -9,15 +9,30 @@ class NodeTest {
     private static final int TEST_VALUE = 100;
     private static final String NULL_VALUE_MESSAGE = "Node's value cannot be null";
 
-    @Test
-    void givenValidValue_whenInit_thenSetValue() {
-        Node<Integer> node = new Node<>(TEST_VALUE);
-        assertEquals(TEST_VALUE, node.value(),
-                "Node should store the value it was initialized with");
+    private Node<Integer> createNode(int value) {
+        return new Node<>(value);
+    }
+
+    private Node<String> createNode(String value) {
+        return new Node<>(value);
+    }
+
+    private Node<Integer> createNode(int value, long ttl) {
+        return new Node<>(value, ttl);
+    }
+
+    private Node<String> createNode(String value, long ttl) {
+        return new Node<>(value, ttl);
     }
 
     @Test
-    void givenNullValue_whenInit_thenThrowNullPointerException() {
+    void shouldStoreValueOnInitialization() {
+        Node<Integer> node = createNode(TEST_VALUE);
+        assertEquals(TEST_VALUE, node.value());
+    }
+
+    @Test
+    void shouldThrowWhenInitializedWithNullValue() {
         NullPointerException exception = assertThrows(
                 NullPointerException.class,
                 () -> new Node<Integer>(null)
@@ -26,18 +41,18 @@ class NodeTest {
     }
 
     @Test
-    void givenNewNode_whenCreated_thenLinksAreNull() {
-        Node<String> node = new Node<>("test");
+    void shouldHaveNullLinksWhenNew() {
+        Node<String> node = createNode("test");
         assertAll(
-                () -> assertNull(node.next(), "Next should be null for new node"),
-                () -> assertNull(node.previous(), "Previous should be null for new node")
+                () -> assertNull(node.next()),
+                () -> assertNull(node.previous())
         );
     }
 
     @Test
-    void givenNode_whenSettingNext_thenLinksAreProperlyUpdated() {
-        Node<Integer> first = new Node<>(1);
-        Node<Integer> second = new Node<>(2);
+    void shouldSetNextAndPreviousLinksProperly() {
+        Node<Integer> first = createNode(1);
+        Node<Integer> second = createNode(2);
 
         first.next(second);
 
@@ -48,9 +63,9 @@ class NodeTest {
     }
 
     @Test
-    void givenNode_whenSettingPrevious_thenLinksAreProperlyUpdated() {
-        Node<Integer> first = new Node<>(1);
-        Node<Integer> second = new Node<>(2);
+    void shouldSetPreviousAndUpdateNextLink() {
+        Node<Integer> first = createNode(1);
+        Node<Integer> second = createNode(2);
 
         second.previous(first);
 
@@ -61,12 +76,12 @@ class NodeTest {
     }
 
     @Test
-    void givenExistingLinks_whenReplacingNext_thenOldLinksAreCleaned() {
-        Node<Integer> first = new Node<>(1);
-        Node<Integer> second = new Node<>(2);
-        Node<Integer> third = new Node<>(3);
-        first.next(second);
+    void shouldReplaceNextAndCleanOldLinks() {
+        Node<Integer> first = createNode(1);
+        Node<Integer> second = createNode(2);
+        Node<Integer> third = createNode(3);
 
+        first.next(second);
         first.next(third);
 
         assertAll(
@@ -77,11 +92,11 @@ class NodeTest {
     }
 
     @Test
-    void givenExistingLinks_whenSettingNullNext_thenLinksAreRemoved() {
-        Node<Integer> first = new Node<>(1);
-        Node<Integer> second = new Node<>(2);
-        first.next(second);
+    void shouldRemoveLinksWhenSettingNextToNull() {
+        Node<Integer> first = createNode(1);
+        Node<Integer> second = createNode(2);
 
+        first.next(second);
         first.next(null);
 
         assertAll(
@@ -91,17 +106,60 @@ class NodeTest {
     }
 
     @Test
-    void givenCircularLinks_whenBreaking_thenLinksAreProperlyUpdated() {
-        Node<Integer> first = new Node<>(1);
-        Node<Integer> second = new Node<>(2);
+    void shouldBreakCircularLinks() {
+        Node<Integer> first = createNode(1);
+        Node<Integer> second = createNode(2);
+
         first.next(second);
         second.previous(first);
-
         first.next(null);
 
         assertAll(
                 () -> assertNull(first.next()),
                 () -> assertNull(second.previous())
         );
+    }
+
+    @Test
+    void shouldNotExpireImmediatelyWhenNotExpired() {
+        Node<Integer> node = createNode(TEST_VALUE, 1_000_000_000);
+        assertFalse(node.isExpired());
+    }
+
+    @Test
+    void shouldExpireImmediatelyWhenTTLExceeded() {
+        Node<String> node = createNode("test", -1);
+        assertTrue(node.isExpired());
+    }
+
+    @Test
+    void shouldExtendLifetimeOnAccessUpdate() throws InterruptedException {
+        Node<String> node = createNode("test", 100_000_000L);
+
+        Thread.sleep(50);
+        node.updateAccessTime();
+        Thread.sleep(60);
+
+        assertFalse(node.isExpired());
+    }
+
+    @Test
+    void zeroTTLShouldNeverExpire() {
+        Node<String> node = createNode("test", 0);
+        assertFalse(node.isExpired());
+    }
+
+    @Test
+    void shouldExpireAfterTTLOfInactivityDespiteUpdates() throws InterruptedException {
+        Node<String> node = createNode("test", 50);
+
+        for (int i = 0; i < 5; i++) {
+            node.updateAccessTime();
+            assertFalse(node.isExpired());
+            Thread.sleep(5);
+        }
+
+        Thread.sleep(60);
+        assertTrue(node.isExpired());
     }
 }
