@@ -160,6 +160,10 @@ public class LRUCache<T> implements CacheManager<T> {
         lock.lock();
         try {
             map.clear();
+
+            head.next().previous(null);
+            tail.previous().next(null);
+
             head.next(tail);
             tail.previous(head);
         } finally {
