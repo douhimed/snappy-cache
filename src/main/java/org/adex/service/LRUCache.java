@@ -116,6 +116,7 @@ public class LRUCache<T> implements CacheManager<T> {
 
             if (node.isExpired(ttl)) {
                 removeNode(node);
+                map.remove(node.value().hashCode());
                 return null;
             }
 
