@@ -74,6 +74,12 @@ public class Node<T> {
         return System.currentTimeMillis() - lastAccess > ttl;
     }
 
+    public boolean isExpired(long ttl) {
+        if (ttl == 0) return false;
+        return System.currentTimeMillis() - lastAccess > ttl;
+    }
+
+
     public void updateAccessTime() {
         lastAccess = System.currentTimeMillis();
     }

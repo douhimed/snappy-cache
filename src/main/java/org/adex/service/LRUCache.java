@@ -6,6 +6,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class LRUCache<T> implements CacheManager<T> {
 
     private final int capacity;
+    private long ttl; // TODO : from resources
     private Map<Integer, Node<T>> map;
     private final Node<T> head = new Node<>();
     private final Node<T> tail = new Node<>();
@@ -17,8 +18,13 @@ public class LRUCache<T> implements CacheManager<T> {
     }
 
     public LRUCache(int capacity) {
+        this(capacity, 1000 * 60 * 60 * 24);
+    }
+
+    public LRUCache(int capacity, long ttl) {
         this.capacity = capacity;
         this.map = new HashMap<>(capacity);
+        this.ttl = ttl;
 
         head.next(tail);
         tail.previous(head);
@@ -61,6 +67,7 @@ public class LRUCache<T> implements CacheManager<T> {
             if (Objects.nonNull(node)) {
                 node.value(value);
                 moveToHead(node);
+                node.updateAccessTime();
                 return;
             }
 
@@ -107,6 +114,12 @@ public class LRUCache<T> implements CacheManager<T> {
                 return null;
             }
 
+            if (node.isExpired(ttl)) {
+                removeNode(node);
+                return null;
+            }
+
+            node.updateAccessTime();
             moveToHead(node);
             return node.value();
         } finally {
@@ -121,6 +134,11 @@ public class LRUCache<T> implements CacheManager<T> {
         try {
             return map.values()
                     .stream()
+                    .filter(n -> !n.isExpired(ttl))
+                    .peek(n -> {
+                        n.updateAccessTime();
+                        n.updateAccessTime();
+                    })
                     .map(Node::value)
                     .toList();
         } finally {
@@ -134,10 +152,12 @@ public class LRUCache<T> implements CacheManager<T> {
         lock.lock();
 
         try {
-            if (head.next().equals(tail)) {
+            Node<T> next = this.head.next();
+            if (next.equals(tail)) {
                 return null;
             }
-            return this.head.next().value();
+            next.updateAccessTime();
+            return next.value();
         } finally {
             lock.unlock();
         }
