@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class LRUCacheTest {
     private static final int CACHE_CAPACITY = 5;
-    private CacheManager<Dummy> cache;
+    private Cache<Dummy> cache;
 
     @BeforeEach
     void setUp() {
@@ -142,7 +142,7 @@ public class LRUCacheTest {
     }
 
     // Helper methods
-    private void assertMostRecentlyAccessed(CacheManager<Dummy> cache, Dummy expected) {
+    private void assertMostRecentlyAccessed(Cache<Dummy> cache, Dummy expected) {
         Dummy head = cache.peek();
         assertAll("Verify head is most recently accessed item",
                 () -> assertNotNull(head, "Head should not be null"),
@@ -151,7 +151,7 @@ public class LRUCacheTest {
         );
     }
 
-    private void accessAll(CacheManager<Dummy> cache, Dummy... items) {
+    private void accessAll(Cache<Dummy> cache, Dummy... items) {
         Arrays.stream(items).forEach(cache::get);
     }
 

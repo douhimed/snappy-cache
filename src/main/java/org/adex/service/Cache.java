@@ -2,7 +2,7 @@ package org.adex.service;
 
 import java.util.Collection;
 
-public interface CacheManager<T> {
+public interface Cache<T> {
 
     void put(T value);
 

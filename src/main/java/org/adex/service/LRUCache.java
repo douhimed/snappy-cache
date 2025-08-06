@@ -3,11 +3,11 @@ package org.adex.service;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class LRUCache<T> implements CacheManager<T> {
+public class LRUCache<T> implements Cache<T> {
 
     private final int capacity;
     private long ttl;
-    private Map<Integer, Node<T>> map;
+    private final Map<Integer, Node<T>> map;
     private final Node<T> head = new Node<>();
     private final Node<T> tail = new Node<>();
 
@@ -30,7 +30,7 @@ public class LRUCache<T> implements CacheManager<T> {
         tail.previous(head);
     }
 
-    public CacheManager<T> ttl(long ttl) {
+    public Cache<T> ttl(long ttl) {
         this.ttl = ttl;
         return this;
     }

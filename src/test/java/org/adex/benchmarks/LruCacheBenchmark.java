@@ -1,6 +1,7 @@
 package org.adex.benchmarks;
 
 
+import org.adex.service.Cache;
 import org.adex.service.LRUCache;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
@@ -19,7 +20,7 @@ public class LruCacheBenchmark {
     @Param({"1000", "10000", "100000", "1000000"})
     public int cacheSize;
 
-    private LRUCache<Integer> cache;
+    private Cache<Integer> cache;
     private int testKey;
 
     @Setup(Level.Trial)
