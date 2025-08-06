@@ -66,7 +66,6 @@ public class Node<T> {
         return System.currentTimeMillis() - lastAccess > ttl;
     }
 
-
     public void updateAccessTime() {
         lastAccess = System.currentTimeMillis();
     }

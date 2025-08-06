@@ -20,7 +20,7 @@ This project provides a custom implementation of an LRU cache system focused on 
   Built-in synchronization for safe multi-threaded access.
 
 - [x] **TTL (Time-To-Live) Support**  
-  Optional time-based expiration of cache entries.
+  Optional time-based (based on milliseconds) expiration of cache entries.
 
 - [ ] **Extensible Design**  
   Built with flexibility in mind to support:
