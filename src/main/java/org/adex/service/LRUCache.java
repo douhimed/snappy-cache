@@ -60,24 +60,7 @@ public class LRUCache<T> implements CacheManager<T> {
         lock.lock();
 
         try {
-            int key = value.hashCode();
-
-            Node<T> node = map.get(key);
-
-            if (Objects.nonNull(node)) {
-                node.value(value);
-                moveToHead(node);
-                node.updateAccessTime();
-                return;
-            }
-
-            if (this.map.size() == this.capacity) {
-                eviction();
-            }
-
-            node = new Node<>(value);
-            this.map.put(key, node);
-            addToHead(node);
+            putInternal(value);
         } finally {
             lock.unlock();
         }
@@ -92,8 +75,8 @@ public class LRUCache<T> implements CacheManager<T> {
         lock.lock();
         try {
             for (T value : values) {
-                if (value != null)  {
-                    this.put(value);
+                if (value != null) {
+                    putInternal(value);
                 }
             }
         } finally {
@@ -238,5 +221,25 @@ public class LRUCache<T> implements CacheManager<T> {
         if (next != null) {
             next.previous(prev);
         }
+    }
+
+    private void putInternal(T value) {
+        int key = value.hashCode();
+        Node<T> node = map.get(key);
+
+        if (node != null) {
+            node.value(value);
+            moveToHead(node);
+            node.updateAccessTime();
+            return;
+        }
+
+        if (map.size() == capacity) {
+            eviction();
+        }
+
+        node = new Node<>(value);
+        map.put(key, node);
+        addToHead(node);
     }
 }
