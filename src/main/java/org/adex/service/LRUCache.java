@@ -6,7 +6,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class LRUCache<T> implements CacheManager<T> {
 
     private final int capacity;
-    private long ttl; // TODO : from resources
+    private long ttl;
     private Map<Integer, Node<T>> map;
     private final Node<T> head = new Node<>();
     private final Node<T> tail = new Node<>();
@@ -14,7 +14,7 @@ public class LRUCache<T> implements CacheManager<T> {
     protected ReentrantLock lock = new ReentrantLock();
 
     public LRUCache() {
-        this(16);
+        this(16, 1000 * 60 * 60 * 24);
     }
 
     public LRUCache(int capacity) {
@@ -28,6 +28,11 @@ public class LRUCache<T> implements CacheManager<T> {
 
         head.next(tail);
         tail.previous(head);
+    }
+
+    public CacheManager<T> ttl(long ttl) {
+        this.ttl = ttl;
+        return this;
     }
 
     @Override
