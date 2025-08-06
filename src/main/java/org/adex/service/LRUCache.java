@@ -239,5 +239,4 @@ public class LRUCache<T> implements CacheManager<T> {
             next.previous(prev);
         }
     }
-
 }

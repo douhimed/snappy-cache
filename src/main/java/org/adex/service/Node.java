@@ -11,7 +11,6 @@ public class Node<T> {
     private Node<T> previous;
     private Node<T> next;
 
-    private long ttl;
     private long lastAccess;
 
     protected Node() {
@@ -20,13 +19,6 @@ public class Node<T> {
     public Node(T value) {
         Objects.requireNonNull(value, "Node's value cannot be null");
         this.value = value;
-        this.lastAccess = Clock.fixed(Instant.now(), ZoneId.systemDefault()).millis();
-    }
-
-    public Node(T value, long ttl) {
-        Objects.requireNonNull(value, "Node's value cannot be null");
-        this.value = value;
-        this.ttl = ttl;
         this.lastAccess = Clock.fixed(Instant.now(), ZoneId.systemDefault()).millis();
     }
 
@@ -67,11 +59,6 @@ public class Node<T> {
             next.previous = this;
         }
         return this;
-    }
-
-    public boolean isExpired() {
-        if (ttl == 0) return false;
-        return System.currentTimeMillis() - lastAccess > ttl;
     }
 
     public boolean isExpired(long ttl) {

@@ -9,25 +9,9 @@ class NodeTest {
     private static final int TEST_VALUE = 100;
     private static final String NULL_VALUE_MESSAGE = "Node's value cannot be null";
 
-    private Node<Integer> createNode(int value) {
-        return new Node<>(value);
-    }
-
-    private Node<String> createNode(String value) {
-        return new Node<>(value);
-    }
-
-    private Node<Integer> createNode(int value, long ttl) {
-        return new Node<>(value, ttl);
-    }
-
-    private Node<String> createNode(String value, long ttl) {
-        return new Node<>(value, ttl);
-    }
-
     @Test
     void shouldStoreValueOnInitialization() {
-        Node<Integer> node = createNode(TEST_VALUE);
+        Node<Integer> node = new Node<>(TEST_VALUE);
         assertEquals(TEST_VALUE, node.value());
     }
 
@@ -42,7 +26,7 @@ class NodeTest {
 
     @Test
     void shouldHaveNullLinksWhenNew() {
-        Node<String> node = createNode("test");
+        Node<String> node = new Node<>("test");
         assertAll(
                 () -> assertNull(node.next()),
                 () -> assertNull(node.previous())
@@ -51,8 +35,8 @@ class NodeTest {
 
     @Test
     void shouldSetNextAndPreviousLinksProperly() {
-        Node<Integer> first = createNode(1);
-        Node<Integer> second = createNode(2);
+        Node<Integer> first = new Node<>(1);
+        Node<Integer> second = new Node<>(2);
 
         first.next(second);
 
@@ -64,8 +48,8 @@ class NodeTest {
 
     @Test
     void shouldSetPreviousAndUpdateNextLink() {
-        Node<Integer> first = createNode(1);
-        Node<Integer> second = createNode(2);
+        Node<Integer> first = new Node<>(1);
+        Node<Integer> second = new Node<>(2);
 
         second.previous(first);
 
@@ -77,9 +61,9 @@ class NodeTest {
 
     @Test
     void shouldReplaceNextAndCleanOldLinks() {
-        Node<Integer> first = createNode(1);
-        Node<Integer> second = createNode(2);
-        Node<Integer> third = createNode(3);
+        Node<Integer> first = new Node<>(1);
+        Node<Integer> second = new Node<>(2);
+        Node<Integer> third = new Node<>(3);
 
         first.next(second);
         first.next(third);
@@ -93,8 +77,8 @@ class NodeTest {
 
     @Test
     void shouldRemoveLinksWhenSettingNextToNull() {
-        Node<Integer> first = createNode(1);
-        Node<Integer> second = createNode(2);
+        Node<Integer> first = new Node<>(1);
+        Node<Integer> second = new Node<>(2);
 
         first.next(second);
         first.next(null);
@@ -107,8 +91,8 @@ class NodeTest {
 
     @Test
     void shouldBreakCircularLinks() {
-        Node<Integer> first = createNode(1);
-        Node<Integer> second = createNode(2);
+        Node<Integer> first = new Node<>(1);
+        Node<Integer> second = new Node<>(2);
 
         first.next(second);
         second.previous(first);
@@ -122,44 +106,45 @@ class NodeTest {
 
     @Test
     void shouldNotExpireImmediatelyWhenNotExpired() {
-        Node<Integer> node = createNode(TEST_VALUE, 1_000_000_000);
-        assertFalse(node.isExpired());
+        Node<Integer> node = new Node<>(TEST_VALUE);
+        assertFalse(node.isExpired(1_000_000_000));
     }
 
     @Test
     void shouldExpireImmediatelyWhenTTLExceeded() {
-        Node<String> node = createNode("test", -1);
-        assertTrue(node.isExpired());
+        Node<String> node = new Node<>("test");
+        assertTrue(node.isExpired(-1));
     }
 
     @Test
     void shouldExtendLifetimeOnAccessUpdate() throws InterruptedException {
-        Node<String> node = createNode("test", 100_000_000L);
+        Node<String> node = new Node<>("test");
 
         Thread.sleep(50);
         node.updateAccessTime();
         Thread.sleep(60);
 
-        assertFalse(node.isExpired());
+        assertFalse(node.isExpired(100_000_000L));
     }
 
     @Test
     void zeroTTLShouldNeverExpire() {
-        Node<String> node = createNode("test", 0);
-        assertFalse(node.isExpired());
+        Node<String> node = new Node<>("test");
+        assertFalse(node.isExpired(0));
     }
 
     @Test
     void shouldExpireAfterTTLOfInactivityDespiteUpdates() throws InterruptedException {
-        Node<String> node = createNode("test", 50);
+        Node<String> node = new Node<>("test");
 
         for (int i = 0; i < 5; i++) {
             node.updateAccessTime();
-            assertFalse(node.isExpired());
+            assertFalse(node.isExpired(50));
             Thread.sleep(5);
         }
 
         Thread.sleep(60);
-        assertTrue(node.isExpired());
+        assertTrue(node.isExpired(50));
     }
+
 }
