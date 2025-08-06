@@ -19,10 +19,10 @@ This project provides a custom implementation of an LRU cache system focused on 
 - [x] **Thread-Safe Concurrency Control**  
   Built-in synchronization for safe multi-threaded access.
 
-- [ ] **TTL (Time-To-Live) Support**  
+- [x] **TTL (Time-To-Live) Support**  
   Optional time-based expiration of cache entries.
 
-- [x] **Extensible Design**  
+- [ ] **Extensible Design**  
   Built with flexibility in mind to support:
     - LFU (Least Frequently Used) cache strategies
     - Distributed caching in future implementations
