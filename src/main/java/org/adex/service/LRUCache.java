@@ -119,10 +119,7 @@ public class LRUCache<T> implements CacheManager<T> {
             return map.values()
                     .stream()
                     .filter(n -> !n.isExpired(ttl))
-                    .peek(n -> {
-                        n.updateAccessTime();
-                        n.updateAccessTime();
-                    })
+                    .peek(Node::updateAccessTime)
                     .map(Node::value)
                     .toList();
         } finally {
