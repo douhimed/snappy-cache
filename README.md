@@ -24,8 +24,8 @@ This project provides a custom implementation of an LRU cache system focused on 
 
 - [ ] **Extensible Design**  
   Built with flexibility in mind to support:
-    - LFU (Least Frequently Used) cache strategies
-    - Distributed caching in future implementations
+    - [x] LFU (Least Frequently Used) cache strategies
+    - [ ] Distributed caching in future implementations
 
 ---
 

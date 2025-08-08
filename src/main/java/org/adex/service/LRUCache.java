@@ -6,10 +6,10 @@ import java.util.concurrent.locks.ReentrantLock;
 public class LRUCache<T> implements Cache<T> {
 
     private final int capacity;
-    private long ttl;
     private final Map<Integer, Node<T>> map;
-    private final Node<T> head = new Node<>();
-    private final Node<T> tail = new Node<>();
+
+    private long ttl;
+    private EvictionPolicy<T> policy;
 
     protected ReentrantLock lock = new ReentrantLock();
 
@@ -26,8 +26,14 @@ public class LRUCache<T> implements Cache<T> {
         this.map = new HashMap<>(capacity);
         this.ttl = ttl;
 
-        head.next(tail);
-        tail.previous(head);
+        policy = new LRUEvictionPolicy<>(map);
+    }
+
+    public Cache<T> withPolicy(EvictionPolicy.PolicyType type) {
+        this.policy = type == EvictionPolicy.PolicyType.LFU
+                ? new LFUEvictionPolicy<>()
+                : new LRUEvictionPolicy<T>(map);
+        return this;
     }
 
     public Cache<T> ttl(long ttl) {
@@ -103,13 +109,12 @@ public class LRUCache<T> implements Cache<T> {
             }
 
             if (node.isExpired(ttl)) {
-                removeNode(node);
-                map.remove(node.value().hashCode());
+                policy.remove(node);
                 return null;
             }
 
             node.updateAccessTime();
-            moveToHead(node);
+            policy.onGet(obj);
             return node.value();
         } finally {
             lock.unlock();
@@ -138,7 +143,11 @@ public class LRUCache<T> implements Cache<T> {
         lock.lock();
 
         try {
-            Node<T> next = this.head.next();
+
+            Node<T> head = policy.head();
+            Node<T> tail = policy.tail();
+
+            Node<T> next = head.next();
             if (next.equals(tail)) {
                 return null;
             }
@@ -167,6 +176,9 @@ public class LRUCache<T> implements Cache<T> {
         try {
             map.clear();
 
+            Node<T> head = policy.head();
+            Node<T> tail = policy.tail();
+
             head.next().previous(null);
             tail.previous().next(null);
 
@@ -177,71 +189,22 @@ public class LRUCache<T> implements Cache<T> {
         }
     }
 
-    private void eviction() {
-        Node<T> toDelete = tail.previous();
-
-        if (toDelete == null) {
-            return;
-        }
-
-        Node<T> newLast = toDelete.previous();
-        tail.previous(newLast);
-
-        if (newLast != null) {
-            newLast.next(tail);
-        }
-
-        map.remove(toDelete.value().hashCode());
-        toDelete.next(null);
-        toDelete.previous(null);
-    }
-
-
-    private void addToHead(Node<T> node) {
-        node.next(head.next());
-        node.previous(head);
-
-        if (head.next() != null) {
-            head.next().previous(node);
-        }
-        head.next(node);
-    }
-
-    private void moveToHead(Node<T> node) {
-        removeNode(node);
-        addToHead(node);
-    }
-
-    private void removeNode(Node<T> node) {
-        Node<T> prev = node.previous();
-        Node<T> next = node.next();
-
-        if (prev != null) {
-            prev.next(next);
-        }
-
-        if (next != null) {
-            next.previous(prev);
-        }
-    }
-
     private void putInternal(T value) {
         int key = value.hashCode();
         Node<T> node = map.get(key);
 
         if (node != null) {
-            node.value(value);
-            moveToHead(node);
+            policy.onPut(value);
             node.updateAccessTime();
             return;
         }
 
         if (map.size() == capacity) {
-            eviction();
+            policy.evict();
         }
 
         node = new Node<>(value);
         map.put(key, node);
-        addToHead(node);
+        policy.onPut(value);
     }
 }
