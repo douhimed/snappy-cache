@@ -1,16 +1,18 @@
-package org.adex.service;
+package org.adex.service.eviction;
 
-import java.util.Map;
+import org.adex.service.Node;
+import org.adex.service.store.StorePolicy;
+
 import java.util.Objects;
 
 public class LRUEvictionPolicy<T> implements EvictionPolicy<T> {
 
-    private final Map<Integer, Node<T>> map;
+    private StorePolicy<T> store;
     private final Node<T> head = new Node<>();
     private final Node<T> tail = new Node<>();
 
-    public LRUEvictionPolicy(Map<Integer, Node<T>> map) {
-        this.map = map;
+    public LRUEvictionPolicy(StorePolicy<T> store) {
+        this.store = store;
         head.next(tail);
         tail.previous(head);
     }
@@ -19,8 +21,13 @@ public class LRUEvictionPolicy<T> implements EvictionPolicy<T> {
     public void onPut(T value) {
         int hash = Objects.hashCode(value);
 
-        var node = map.computeIfAbsent(hash, h -> new Node<>(value));
-        node.value(value);
+        Node<T> node = store.get(hash);
+        if (node == null) {
+            node = new Node<>(value);
+            store.put(hash, node);
+        } else {
+            node.value(value);
+        }
 
         remove(node);
         addToFront(node);
@@ -28,7 +35,7 @@ public class LRUEvictionPolicy<T> implements EvictionPolicy<T> {
 
     @Override
     public void onGet(T value) {
-        var node = map.get(Objects.hashCode(value));
+        var node = store.get(Objects.hashCode(value));
         if (node != null) {
             remove(node);
             addToFront(node);
@@ -50,7 +57,7 @@ public class LRUEvictionPolicy<T> implements EvictionPolicy<T> {
             newLast.next(tail);
         }
 
-        map.remove(toDelete.value().hashCode());
+        store.remove(toDelete.value().hashCode());
         toDelete.next(null);
         toDelete.previous(null);
     }

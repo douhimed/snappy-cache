@@ -1,4 +1,6 @@
-package org.adex.service;
+package org.adex.service.eviction;
+
+import org.adex.service.Node;
 
 public class LFUEvictionPolicy<T> implements EvictionPolicy<T> {
 

@@ -13,7 +13,7 @@ public class Node<T> {
 
     private long lastAccess;
 
-    protected Node() {
+    public Node() {
     }
 
     public Node(T value) {
