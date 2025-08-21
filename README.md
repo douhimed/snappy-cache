@@ -22,10 +22,10 @@ This project provides a custom implementation of an LRU cache system focused on 
 - [x] **TTL (Time-To-Live) Support**  
   Optional time-based (based on milliseconds) expiration of cache entries.
 
-- [ ] **Extensible Design**  
+- [x] **Extensible Design**  
   Built with flexibility in mind to support:
     - [x] LFU (Least Frequently Used) cache strategies
-    - [ ] Distributed caching in future implementations
+    - [x] Distributed caching in future implementations
 
 ---
 
