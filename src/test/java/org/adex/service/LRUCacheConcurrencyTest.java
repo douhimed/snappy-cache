@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -153,18 +154,20 @@ public class LRUCacheConcurrencyTest {
     }
 
     @Test
-    void givenHighContention_whenPuttingValues_thenCompletesWithoutDeadlock() throws Exception {
-        int threadCount = Runtime.getRuntime().availableProcessors() * 2;
-        ExecutorService highLoadExecutor = Executors.newFixedThreadPool(threadCount);
+    void givenHighContention_whenPuttingValues_thenCompletesWithoutDeadlock() {
+        assertTimeoutPreemptively(Duration.ofSeconds(TIMEOUT_SECONDS), () -> {
+            int threadCount = Runtime.getRuntime().availableProcessors() * 2;
+            ExecutorService highLoadExecutor = Executors.newFixedThreadPool(threadCount);
 
-        List<Future<?>> futures = IntStream.range(0, threadCount)
-                .mapToObj(i -> highLoadExecutor.submit(() ->
-                        IntStream.range(0, HIGH_CONTENTION_ITERATIONS).forEach(cache::put)))
-                .collect(Collectors.toList());
+            List<Future<?>> futures = IntStream.range(0, threadCount)
+                    .mapToObj(i -> highLoadExecutor.submit(() ->
+                            IntStream.range(0, HIGH_CONTENTION_ITERATIONS).forEach(cache::put)))
+                    .collect(Collectors.toUnmodifiableList());
 
-        for (Future<?> future : futures) {
-            future.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        }
+            for (Future<?> future : futures) {
+                assertDoesNotThrow(() -> future.get());
+            }
+        });
     }
 
     @Test
